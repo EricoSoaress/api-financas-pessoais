@@ -1,4 +1,4 @@
-API RESTful para um aplicativo de gerenciamento de finanças, construída com Python, FastAPI e SQLAlchemy como parte de um projetO.
+API RESTful para um aplicativo de gerenciamento de finanças, construída com Python, FastAPI e SQLAlchemy como parte de um projeto.
 
  Funcionalidades
 
