@@ -168,6 +168,29 @@ def deletar_uma_transacao(
     # Com o status 204, a resposta não tem corpo, então retornamos None.
     return None
 
+@app.get("/transacoes/{transacao_id}", response_model=schemas.TransacaoPublic)
+def ler_uma_transacao(
+    transacao_id: int,
+    db: Session = Depends(get_db),
+    usuario_atual: models.Usuario = Depends(get_usuario_atual)
+):
+    """
+    Retorna os detalhes de uma transação específica do usuário logado.
+    """
+    # 1. Busca a transação no banco de dados.
+    db_transacao = crud.buscar_transacao_por_id(db, transacao_id=transacao_id)
+
+    # 2. Se não encontrar, retorna erro 404.
+    if db_transacao is None:
+        raise HTTPException(status_code=404, detail="Transação não encontrada")
+
+    # 3. Verifica se o usuário logado é o dono da transação.
+    if db_transacao.usuario_id != usuario_atual.id:
+        raise HTTPException(status_code=403, detail="Não tem permissão para ver esta transação")
+
+    # 4. Se tudo estiver correto, retorna a transação encontrada.
+    return db_transacao
+
 
 @app.get("/")
 def ola_mundo():
