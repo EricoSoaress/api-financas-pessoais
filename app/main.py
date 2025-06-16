@@ -5,6 +5,9 @@ from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer, OA
 from sqlalchemy.orm import Session
 from datetime import timedelta
 from jose import JWTError, jwt
+from .database import engine, Base
+
+Base.metadata.create_all(bind=engine)
 
 # 1. IMPORTS DOS NOSSOS MÓDULOS
 from . import models, schemas, crud, security
