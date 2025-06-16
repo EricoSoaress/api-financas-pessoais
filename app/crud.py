@@ -1,8 +1,7 @@
-# app/crud.py (versão corrigida)
+# app/crud.py
 
 from sqlalchemy.orm import Session
 from . import models, schemas
-# IMPORTAÇÃO QUE FALTAVA:
 from .security import get_password_hash, create_access_token, verify_password
 
 def get_user(db: Session, user_id: int):
@@ -15,9 +14,9 @@ def get_users(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.Usuario).offset(skip).limit(limit).all()
 
 def create_user(db: Session, user: schemas.UsuarioCreate):
-    # A chamada para esta função agora funciona, pois ela foi importada.
     hashed_password = get_password_hash(user.password)
-    db_user = models.Usuario(email=user.email, hashed_password=hashed_password)
+    # CORREÇÃO: Usando "senha_hash" para corresponder ao modelo.
+    db_user = models.Usuario(email=user.email, senha_hash=hashed_password)
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
