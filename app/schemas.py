@@ -1,5 +1,6 @@
 # app/schemas.py
 
+from typing import List
 from pydantic import BaseModel, EmailStr
 from pydantic import BaseModel, EmailStr
 from datetime import date
@@ -9,44 +10,35 @@ from decimal import Decimal
 # ... (schemas UsuarioCreate, UsuarioPublic, Token)
 
 # Schema para a criação de um usuário (o que o usuário nos envia)
-class UsuarioCreate(BaseModel):
-    nome: str
-    email: EmailStr  # Pydantic valida se é um e-mail válido
-    senha: str
+class TransacaoBase(BaseModel):
+    description: str
+    value: float
+    type: str
 
-# Schema para a resposta (o que enviamos de volta ao usuário)
-# NUNCA inclua a senha na resposta!
-class UsuarioPublic(BaseModel):
+class TransacaoCreate(TransacaoBase):
+    owner_id: int
+
+class Transacao(TransacaoBase):
     id: int
-    nome: str
-    email: EmailStr
+    owner_id: int
 
     class Config:
-        from_attributes = True # Antigamente orm_mode = True
-        # Permite que o Pydantic leia os dados de um objeto ORM (nosso modelo SQLAlchemy)
-# app/schemas.py
-
-# schemas tonken
-class Token(BaseModel):
-    access_token: str
-    token_type: str
+        from_attributes = True
 
 
+# Esquemas para Usuário
+class UsuarioBase(BaseModel):
+    email: str
 
-# Schema para receber os dados de criação de uma transação
-class TransacaoCreate(BaseModel):
-    descricao: str
-    valor: Decimal
-    tipo: str # 'receita' ou 'despesa'
+class UsuarioCreate(UsuarioBase):
+    password: str
 
-# Schema para exibir uma transação
-class TransacaoPublic(BaseModel):
+# ==================== ESTE É O ESQUEMA QUE FALTAVA ====================
+# Note o nome "Usuario", que corresponde ao seu padrão.
+class Usuario(UsuarioBase):
     id: int
-    descricao: str
-    valor: Decimal
-    tipo: str
-    data: date
-    usuario_id: int
+    transactions: List[Transacao] = []
 
     class Config:
-        from_attributes = True    
+        from_attributes = True
+# =====================================================================
