@@ -1,16 +1,16 @@
-# app/main.py (versão final e completa)
+# app/main.py (versão final e 100% corrigida)
 
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta
-from typing import List # <--- ESTA É A LINHA QUE CORRIGE O ERRO
+from typing import List
 
-# 1. Importar todos os nossos módulos
-from . import crud, models, schemas
+# 1. Importar todos os módulos necessários, incluindo o 'security'
+from . import crud, models, schemas, security
 from .database import SessionLocal, engine, Base
 
-# 2. Criar as tabelas no banco de dados
+# 2. Comando para criar as tabelas no banco de dados na inicialização
 Base.metadata.create_all(bind=engine)
 
 # 3. Criar a aplicação FastAPI
@@ -34,14 +34,16 @@ def read_root():
 @app.post("/login/token")
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = crud.get_user_by_email(db, email=form_data.username)
-    if not user or not crud.verify_password(form_data.password, user.hashed_password):
+    # CORREÇÃO: Chamando verify_password a partir de 'security'
+    if not user or not security.verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=401,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(minutes=30)
-    access_token = crud.create_access_token(
+    # CORREÇÃO: Chamando create_access_token a partir de 'security'
+    access_token = security.create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
@@ -68,3 +70,13 @@ def create_transaction_for_user(
 def read_transactions_for_user(user_id: int, db: Session = Depends(get_db)):
     transactions = crud.get_transactions_by_user(db, user_id=user_id)
     return transactions
+
+# Rota PUT que você já tinha, agora garantindo que está correta.
+@app.put("/transactions/{transaction_id}", response_model=schemas.Transacao)
+def update_transaction_endpoint(
+    transaction_id: int, transaction: schemas.TransacaoBase, db: Session = Depends(get_db)
+):
+    db_transaction = crud.update_transaction(db, transaction_id=transaction_id, transaction=transaction)
+    if db_transaction is None:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    return db_transaction
