@@ -3,21 +3,32 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+import os
+from dotenv import load_dotenv
 
-# URL de conexão com o banco de dados SQLite
-# "sqlite:///./minhas_financas.db" significa que usaremos SQLite
-# e o arquivo do banco se chamará "minhas_financas.db" e ficará na raiz do projeto.
-SQLALCHEMY_DATABASE_URL = "sqlite:///./minhas_financas.db"
+# Carrega as variáveis de ambiente do arquivo .env (se ele existir)
+load_dotenv()
 
-# O "engine" é o ponto de entrada para o banco de dados.
-# O argumento connect_args é necessário apenas para o SQLite para permitir
-# que mais de um "thread" se comunique com o banco.
+# Pega a URL do banco de dados a partir das variáveis de ambiente
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
+
+# Se a URL começar com "postgres://", substitui por "postgresql://"
+# A Heroku usa "postgres://", mas o SQLAlchemy espera "postgresql://"
+if SQLALCHEMY_DATABASE_URL and SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
+    SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+# Caso a variável de ambiente não seja encontrada (para desenvolvimento local)
+# usamos um banco de dados SQLite.
+if not SQLALCHEMY_DATABASE_URL:
+    SQLALCHEMY_DATABASE_URL = "sqlite:///./sql_app.db"
+
+# Cria a "engine" do banco de dados
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    SQLALCHEMY_DATABASE_URL,
+    # O argumento 'connect_args' só é necessário para SQLite.
+    connect_args={"check_same_thread": False} if "sqlite" in SQLALCHEMY_DATABASE_URL else {}
 )
 
-# Cada instância de SessionLocal será uma sessão (uma "conversa") com o banco.
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Usaremos esta classe Base para criar nossos modelos do banco de dados (as tabelas).
 Base = declarative_base()
