@@ -46,10 +46,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         )
     user = crud.get_user_by_email(db, email=email)
     if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Usuário não encontrado",
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado")
     return user
 
 @app.get("/")
@@ -65,7 +62,7 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = timedelta(minutes=30)
+    access_token_expires = timedelta(minutes=60)
     access_token = security.create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
     )
@@ -92,3 +89,42 @@ def read_transactions(
     current_user: models.Usuario = Depends(get_current_user)
 ):
     return crud.get_transactions_by_user(db, user_id=current_user.id)
+
+# ==================== ENDPOINTS NOVOS E CORRIGIDOS ====================
+
+# 1. NOVO ENDPOINT para buscar uma transação específica
+@app.get("/transacoes/{transaction_id}", response_model=schemas.Transacao)
+def read_transaction_by_id(
+    transaction_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.Usuario = Depends(get_current_user)
+):
+    db_transaction = crud.get_transaction_by_id(db, transaction_id=transaction_id, user_id=current_user.id)
+    if db_transaction is None:
+        raise HTTPException(status_code=404, detail="Transação não encontrada")
+    return db_transaction
+
+# 2. ENDPOINT DE UPDATE CORRIGIDO, seguro e com a rota certa
+@app.put("/transacoes/{transaction_id}", response_model=schemas.Transacao)
+def update_transaction(
+    transaction_id: int,
+    transaction_data: schemas.TransacaoCreate,
+    db: Session = Depends(get_db),
+    current_user: models.Usuario = Depends(get_current_user)
+):
+    db_transaction = crud.update_transaction(db, transaction_id=transaction_id, transaction_data=transaction_data, user_id=current_user.id)
+    if db_transaction is None:
+        raise HTTPException(status_code=404, detail="Transação não encontrada ou você não tem permissão para editar")
+    return db_transaction
+
+# 3. ENDPOINT DE DELETE CORRIGIDO, seguro e com a rota certa
+@app.delete("/transacoes/{transaction_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_transaction(
+    transaction_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.Usuario = Depends(get_current_user)
+):
+    deleted_transaction = crud.delete_transaction(db, transaction_id=transaction_id, user_id=current_user.id)
+    if deleted_transaction is None:
+        raise HTTPException(status_code=404, detail="Transação não encontrada ou você não tem permissão para deletar")
+    return
