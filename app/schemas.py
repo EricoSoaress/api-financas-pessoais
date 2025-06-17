@@ -1,41 +1,43 @@
 # app/schemas.py
 
 from pydantic import BaseModel, EmailStr
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
-from typing import List, Optional # Garanta que Optional está importado
+from typing import List
 
-# --- Transacao Schemas (sem alteração) ---
+# ==================== TRANSAÇÃO SCHEMAS (COM ALTERAÇÃO) ====================
 class TransacaoBase(BaseModel):
-    description: str
-    value: float
-    type: str
+    # Nomes dos campos alterados para corresponder ao app Android
+    descricao: str
+    valor: Decimal # Usar Decimal para valores monetários é uma boa prática
+    tipo: str
 
 class TransacaoCreate(TransacaoBase):
-    owner_id: int
+    # O owner_id foi removido. A API vai descobrir isso pelo token.
+    pass
 
 class Transacao(TransacaoBase):
     id: int
-    owner_id: int
+    data: date
+    usuario_id: int # Alterado de owner_id para corresponder ao modelo do banco
 
     class Config:
         from_attributes = True
+# =========================================================================
 
-# --- Usuario Schemas (COM ALTERAÇÃO) ---
+# --- Usuario Schemas (sem alteração da última vez) ---
 class UsuarioBase(BaseModel):
     email: EmailStr
-    # Adicionamos o nome aqui para que todos os schemas que herdam o tenham
     nome: str
 
 class UsuarioCreate(UsuarioBase):
-    # Alterado de 'password' para 'senha' para corresponder ao app
     senha: str
 
 class Usuario(UsuarioBase):
     id: int
-    # Adicionamos a data aqui para corresponder ao modelo do banco
     data_criacao: str
-    transactions: List[Transacao] = []
+    # O nome da relação é 'transacoes', como no modelo SQLAlchemy
+    transacoes: List[Transacao] = []
 
     class Config:
         from_attributes = True

@@ -32,7 +32,8 @@ def get_transactions_by_user(db: Session, user_id: int, skip: int = 0, limit: in
     return db.query(models.Transacao).filter(models.Transacao.owner_id == user_id).offset(skip).limit(limit).all()
 
 def create_user_transaction(db: Session, transaction: schemas.TransacaoCreate, user_id: int):
-    db_transaction = models.Transacao(**transaction.model_dump(), owner_id=user_id)
+    # Agora a função recebe user_id diretamente, e não de 'transaction'
+    db_transaction = models.Transacao(**transaction.model_dump(), usuario_id=user_id)
     db.add(db_transaction)
     db.commit()
     db.refresh(db_transaction)

@@ -1,36 +1,27 @@
-# app/main.py
-
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta
 from typing import List
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import status
 
 from . import crud, models, schemas, security
 from .database import SessionLocal, engine, Base
 
 Base.metadata.create_all(bind=engine)
 
-
-
 app = FastAPI()
-
-origins = [
-    "*"
-]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login/token")
 
-# --- Dependências ---
 def get_db():
     db = SessionLocal()
     try:
@@ -38,7 +29,28 @@ def get_db():
     finally:
         db.close()
 
-# --- Endpoints ---
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    payload = security.decode_access_token(token)
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token inválido",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    email: str = payload.get("sub")
+    if email is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token inválido, sem 'sub'",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    user = crud.get_user_by_email(db, email=email)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuário não encontrado",
+        )
+    return user
 
 @app.get("/")
 def read_root():
@@ -49,7 +61,7 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
     user = crud.get_user_by_email(db, email=form_data.username)
     if not user or not security.verify_password(form_data.password, user.senha_hash):
         raise HTTPException(
-            status_code=401,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
@@ -59,8 +71,6 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
-
-# ALTERAÇÃO AQUI: A rota foi corrigida de "/users/" para "/usuarios/"
 @app.post("/usuarios/", response_model=schemas.Usuario)
 def create_user(user: schemas.UsuarioCreate, db: Session = Depends(get_db)):
     db_user = crud.get_user_by_email(db, email=user.email)
@@ -68,43 +78,17 @@ def create_user(user: schemas.UsuarioCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Email already registered")
     return crud.create_user(db=db, user=user)
 
-# ... resto do seu arquivo main.py ...
-
-@app.get("/usuarios/", response_model=List[schemas.Usuario])
-def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    users = crud.get_users(db, skip=skip, limit=limit)
-    return users
-
-@app.post("/transactions/", response_model=schemas.Transacao)
-def create_transaction_for_user(
-    transaction: schemas.TransacaoCreate, db: Session = Depends(get_db)
+@app.post("/transacoes/", response_model=schemas.Transacao)
+def create_transaction(
+    transaction: schemas.TransacaoCreate,
+    db: Session = Depends(get_db),
+    current_user: models.Usuario = Depends(get_current_user)
 ):
-    return crud.create_user_transaction(db=db, transaction=transaction, user_id=transaction.owner_id)
+    return crud.create_user_transaction(db=db, transaction=transaction, user_id=current_user.id)
 
-@app.get("/transactions/{user_id}", response_model=List[schemas.Transacao])
-def read_transactions_for_user(user_id: int, db: Session = Depends(get_db)):
-    transactions = crud.get_transactions_by_user(db, user_id=user_id)
-    return transactions
-
-@app.put("/transactions/{transaction_id}", response_model=schemas.Transacao)
-def update_transaction_endpoint(
-    transaction_id: int, transaction: schemas.TransacaoBase, db: Session = Depends(get_db)
+@app.get("/transacoes/", response_model=List[schemas.Transacao])
+def read_transactions(
+    db: Session = Depends(get_db),
+    current_user: models.Usuario = Depends(get_current_user)
 ):
-    db_transaction = crud.update_transaction(db, transaction_id=transaction_id, transaction=transaction)
-    if db_transaction is None:
-        raise HTTPException(status_code=404, detail="Transaction not found")
-    return db_transaction
-
-@app.delete("/transactions/{transaction_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_transaction(transaction_id: int, db: Session = Depends(get_db)):
-    deleted_transaction = crud.delete_transaction(db, transaction_id=transaction_id)
-    if deleted_transaction is None:
-        raise HTTPException(status_code=404, detail="Transaction not found")
-    return {"detail": "Transaction deleted successfully"}
-
-@app.get("/transaction/{transaction_id}", response_model=schemas.Transacao)
-def read_transaction(transaction_id: int, db: Session = Depends(get_db)):
-    db_transaction = crud.get_transaction_by_id(db, transaction_id=transaction_id)
-    if db_transaction is None:
-        raise HTTPException(status_code=404, detail="Transaction not found")
-    return db_transaction
+    return crud.get_transactions_by_user(db, user_id=current_user.id)
