@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta
 from typing import List
+from fastapi.middleware.cors import CORSMiddleware
 
 from . import crud, models, schemas, security
 from .database import SessionLocal, engine, Base
@@ -12,6 +13,19 @@ from .database import SessionLocal, engine, Base
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+
+origins = [
+    "*"  # Permite todas as origens. Para produção, seria melhor restringir.
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],  # Permite todos os métodos (GET, POST, etc.)
+    allow_headers=["*"],  # Permite todos os cabeçalhos.
+)
+
 
 # --- Dependências ---
 def get_db():
