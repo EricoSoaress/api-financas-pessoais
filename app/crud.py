@@ -1,5 +1,3 @@
-# app/crud.py
-
 from sqlalchemy.orm import Session
 from . import models, schemas
 from .security import get_password_hash
@@ -26,11 +24,10 @@ def create_user(db: Session, user: schemas.UsuarioCreate):
     return db_user
 
 def get_transactions_by_user(db: Session, user_id: int, skip: int = 0, limit: int = 100):
-    return db.query(models.Transacao).filter(models.Transacao.usuario_id == user_id).order_by(models.Transacao.data.desc()).offset(skip).limit(limit).all()
+    return db.query(models.Transacao).filter(
+        models.Transacao.usuario_id == user_id
+    ).order_by(models.Transacao.data.desc()).offset(skip).limit(limit).all()
 
-# ==================== FUNÇÕES NOVAS E CORRIGIDAS ====================
-
-# 1. NOVA FUNÇÃO para buscar uma transação específica de um usuário
 def get_transaction_by_id(db: Session, transaction_id: int, user_id: int):
     return db.query(models.Transacao).filter(
         models.Transacao.id == transaction_id,
@@ -44,7 +41,6 @@ def create_user_transaction(db: Session, transaction: schemas.TransacaoCreate, u
     db.refresh(db_transaction)
     return db_transaction
 
-# 2. FUNÇÃO DE UPDATE CORRIGIDA para aceitar user_id e verificar o dono
 def update_transaction(db: Session, transaction_id: int, transaction_data: schemas.TransacaoCreate, user_id: int):
     db_transaction = get_transaction_by_id(db, transaction_id=transaction_id, user_id=user_id)
     if db_transaction:
@@ -55,7 +51,6 @@ def update_transaction(db: Session, transaction_id: int, transaction_data: schem
         db.refresh(db_transaction)
     return db_transaction
 
-# 3. FUNÇÃO DE DELETE CORRIGIDA para aceitar user_id e verificar o dono
 def delete_transaction(db: Session, transaction_id: int, user_id: int):
     db_transaction = get_transaction_by_id(db, transaction_id=transaction_id, user_id=user_id)
     if db_transaction:
