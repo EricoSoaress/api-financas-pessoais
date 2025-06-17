@@ -1,15 +1,11 @@
 # app/schemas.py
 
-from typing import List
-from pydantic import BaseModel, EmailStr
 from pydantic import BaseModel, EmailStr
 from datetime import date
 from decimal import Decimal
+from typing import List, Optional # Garanta que Optional está importado
 
-
-# ... (schemas UsuarioCreate, UsuarioPublic, Token)
-
-# Schema para a criação de um usuário (o que o usuário nos envia)
+# --- Transacao Schemas (sem alteração) ---
 class TransacaoBase(BaseModel):
     description: str
     value: float
@@ -25,20 +21,21 @@ class Transacao(TransacaoBase):
     class Config:
         from_attributes = True
 
-
-# Esquemas para Usuário
+# --- Usuario Schemas (COM ALTERAÇÃO) ---
 class UsuarioBase(BaseModel):
-    email: str
+    email: EmailStr
+    # Adicionamos o nome aqui para que todos os schemas que herdam o tenham
+    nome: str
 
 class UsuarioCreate(UsuarioBase):
-    password: str
+    # Alterado de 'password' para 'senha' para corresponder ao app
+    senha: str
 
-# ==================== ESTE É O ESQUEMA QUE FALTAVA ====================
-# Note o nome "Usuario", que corresponde ao seu padrão.
 class Usuario(UsuarioBase):
     id: int
+    # Adicionamos a data aqui para corresponder ao modelo do banco
+    data_criacao: str
     transactions: List[Transacao] = []
 
     class Config:
         from_attributes = True
-# =====================================================================

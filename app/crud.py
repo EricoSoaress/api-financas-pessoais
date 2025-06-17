@@ -14,13 +14,19 @@ def get_users(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.Usuario).offset(skip).limit(limit).all()
 
 def create_user(db: Session, user: schemas.UsuarioCreate):
-    hashed_password = get_password_hash(user.password)
-    # CORREÇÃO: Usando "senha_hash" para corresponder ao modelo.
-    db_user = models.Usuario(email=user.email, senha_hash=hashed_password)
+    # Alterado de user.password para user.senha
+    hashed_password = get_password_hash(user.senha)
+    # Adicionado o campo nome=user.nome
+    db_user = models.Usuario(
+        email=user.email,
+        nome=user.nome,
+        senha_hash=hashed_password
+    )
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
     return db_user
+
 
 def get_transactions_by_user(db: Session, user_id: int, skip: int = 0, limit: int = 100):
     return db.query(models.Transacao).filter(models.Transacao.owner_id == user_id).offset(skip).limit(limit).all()
