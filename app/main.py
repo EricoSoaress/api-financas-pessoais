@@ -6,11 +6,32 @@ from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta
 from typing import List
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import status
 
 from . import crud, models, schemas, security
 from .database import SessionLocal, engine, Base
 
 Base.metadata.create_all(bind=engine)
+
+async def get_current_user(token: str = Depends(security.oauth2_scheme), db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, security.SECRET_KEY, algorithms=[security.ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+    
+    user = crud.get_user_by_email(db, email=email)
+    if user is None:
+        raise credentials_exception
+    return user
+
 
 app = FastAPI()
 
@@ -90,3 +111,10 @@ def update_transaction_endpoint(
     if db_transaction is None:
         raise HTTPException(status_code=404, detail="Transaction not found")
     return db_transaction
+
+@app.delete("/transactions/{transaction_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_transaction(transaction_id: int, db: Session = Depends(get_db)):
+    deleted_transaction = crud.delete_transaction(db, transaction_id=transaction_id)
+    if deleted_transaction is None:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    return {"detail": "Transaction deleted successfully"}
