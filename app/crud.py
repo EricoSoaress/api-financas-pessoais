@@ -24,7 +24,7 @@ def create_user(db: Session, user: schemas.UsuarioCreate):
     return db_user
 
 def get_transactions_by_user(db: Session, user_id: int, skip: int = 0, limit: int = 100):
-    # ALTERAÇÃO FINAL: Adicionado um segundo critério de ordenação pelo ID.
+    
     return db.query(models.Transacao).filter(
         models.Transacao.usuario_id == user_id
     ).order_by(models.Transacao.data.desc(), models.Transacao.id.desc()).offset(skip).limit(limit).all()
