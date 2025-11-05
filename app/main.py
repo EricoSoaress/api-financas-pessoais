@@ -90,9 +90,8 @@ def read_transactions(
 ):
     return crud.get_transactions_by_user(db, user_id=current_user.id)
 
-# ==================== ENDPOINTS NOVOS E CORRIGIDOS ====================
 
-# 1. NOVO ENDPOINT para buscar uma transação específica
+# 1. 
 @app.get("/transacoes/{transaction_id}", response_model=schemas.Transacao)
 def read_transaction_by_id(
     transaction_id: int,
@@ -104,7 +103,7 @@ def read_transaction_by_id(
         raise HTTPException(status_code=404, detail="Transação não encontrada")
     return db_transaction
 
-# 2. ENDPOINT DE UPDATE CORRIGIDO, seguro e com a rota certa
+# 2.
 @app.put("/transacoes/{transaction_id}", response_model=schemas.Transacao)
 def update_transaction(
     transaction_id: int,
@@ -117,7 +116,7 @@ def update_transaction(
         raise HTTPException(status_code=404, detail="Transação não encontrada ou você não tem permissão para editar")
     return db_transaction
 
-# 3. ENDPOINT DE DELETE CORRIGIDO, seguro e com a rota certa
+# 3.
 @app.delete("/transacoes/{transaction_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_transaction(
     transaction_id: int,
