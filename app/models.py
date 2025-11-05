@@ -14,7 +14,6 @@ class Usuario(Base):
     senha_hash = Column(String)
     data_criacao = Column(String, default=lambda: datetime.now(timezone.utc).isoformat())
 
-    # AQUI ESTÁ A LINHA ESSENCIAL QUE FOI OMITIDA E CAUSOU O ERRO
     transacoes = relationship("Transacao", back_populates="dono")
 
 
