@@ -1,4 +1,4 @@
-# app/security.py
+
 
 from passlib.context import CryptContext
 from jose import JWTError, jwt
@@ -7,7 +7,7 @@ from typing import Optional
 import os
 from dotenv import load_dotenv
 
-# ... (código existente sem alteração) ...
+
 SECRET_KEY = os.getenv("SECRET_KEY", "fallback_secret_key_for_local_dev")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
@@ -30,8 +30,6 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-# ==================== FUNÇÃO ADICIONADA ====================
-# Esta função decodifica o token para obter o payload (os dados)
 def decode_access_token(token: str):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
